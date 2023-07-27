@@ -12,13 +12,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 //restcontroller = > String 리턴해줌 (json)
 //controller => jsp
 @Controller
-@RequestMapping("/sbbs/basic")
+@RequestMapping("/basic")
 public class BasicController {
 		// jsp파일 부를때
 	// 엑세스 경로 localhost:8080/sbbs/basic/basic1
@@ -92,4 +93,29 @@ public class BasicController {
 		public String basic8post(String id, String pwd) {
 			return "<h1>id: " + id + ", pwd: " + pwd + "</h1>";
 		}
+		
+		@GetMapping("/calc")
+		public String getCalculate() {
+			return "basic/calc";
+		}
+		@PostMapping("/calc")
+	    public String postCalculate(@RequestParam int num1, @RequestParam int num2, @RequestParam String operator, Model model) {
+	        int result = 0;
+	        switch (operator) {
+	            case "+":
+	                result = num1 + num2;
+	                break;
+	            case "-":
+	                result = num1 - num2;
+	                break;
+	            case "*":
+	                result = num1 * num2;
+	                break;
+	            case "/":
+	                result = num1 / num2;
+	                break;
+	        }
+	        model.addAttribute("result", result);
+	        return "basic/calc"; // Thymeleaf 템플릿 파일 이름
+	    }
 }
