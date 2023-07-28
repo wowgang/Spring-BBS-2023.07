@@ -87,7 +87,7 @@ public class UserController {
 	public String loginProc(String uid, String pwd, HttpSession session, Model model) {
 		int result = userService.login(uid, pwd);
 		if (result == UserService.CORRECT_LOGIN) {
-			session.setAttribute("uid", uid);
+			session.setAttribute("sessUid", uid);
 			User user = userService.getUser(uid);
 			session.setAttribute("uname", user.getUname());
 			session.setAttribute("email", user.getEmail());
@@ -161,40 +161,36 @@ public class UserController {
 		String addr = req.getParameter("addr");
 		
 		boolean pwdFlag = false;
-		if (!(pwd == null || pwd.equals("")) && pwd.equals(pwd2) ) { // 입력값이 있고 // pwd == pwd2 새로운 pwd
+		if (pwd != null && pwd.length() > 1 && pwd.equals(pwd2)) {
 			hashedPwd = BCrypt.hashpw(pwd, BCrypt.gensalt());
-			System.out.println(hashedPwd);
 			pwdFlag = true;
-		} // pwd가 빈칸이면 기존 pwd가져가기
+		} 
 		String filename = null;
-		if (filePart != null) {	// 새로운 이미지로 변경
-			if (oldFilename != null) {	// 기존 이미작 있으면 이미지 삭제
+		if (!(filePart.isEmpty())) {		// 새로운 이미지로 변경
+			if (oldFilename != null) {		// 기존 이미지가 있으면 이미지 삭제
 				File oldFile = new File(uploadDir + "profile/" + oldFilename);
 				oldFile.delete();
 			}
 			// 이미지를 저장하고, 스퀘어 이미지로 변경. register code와 동일
-			if (filePart != null) {
-				filename = filePart.getOriginalFilename();
-				String profilePath = uploadDir + "profile/" + filename;
-				try {
-					filePart.transferTo(new File(profilePath));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				AsideUtil au = new AsideUtil();
-				filename = au.squareImage(uploadDir + "profile/" , filename);
-			
-			} else
-				filename = oldFilename;
-		}
-		User user = new User(uid, hashedPwd, uname, email, filename, addr); // pwd가 빈칸이면 기존 pwd가져가기
+			filename = filePart.getOriginalFilename();
+			String profilePath = uploadDir + "profile/" + filename;
+			try {
+				filePart.transferTo(new File(profilePath));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			AsideUtil au = new AsideUtil();
+			filename = au.squareImage(uploadDir + "profile/", filename);
+		} else
+			filename = oldFilename;
+		
+		User user = new User(uid, hashedPwd, uname, email, filename, addr);
 		userService.updateUser(user);
 		session.setAttribute("uname", uname);
 		session.setAttribute("email", email);
 		session.setAttribute("addr", addr);
 		session.setAttribute("profile", filename);
-		
-		if  (pwdFlag) {
+		if (pwdFlag) {
 			model.addAttribute("msg", "패스워드가 변경이 되었습니다.");
 			model.addAttribute("url", "/sbbs/user/list/" + session.getAttribute("currentUserPage"));
 			return "common/alertMsg";
@@ -202,7 +198,7 @@ public class UserController {
 			return "redirect:/user/list/" + session.getAttribute("currentUserPage");
 	}
 	
-	@GetMapping("/delete/{uid}")
+	@GetMapping("/delete/{uid}")	//
 	public String delete(@PathVariable String uid, Model model) {
 		model.addAttribute("uid", uid);
 		return "user/delete";

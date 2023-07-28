@@ -76,7 +76,7 @@ public class BoardController {
 	public String detail(@PathVariable int bid, @PathVariable String uid, String option,
 			HttpSession session, Model model) {
 		// 본인이 조회한 경우 또는 댓글 작성후에는 조회수를 증가시키지 않음
-		String sessionUid = (String) session.getAttribute("uid");
+		String sessionUid = (String) session.getAttribute("sessUid");
 		if (!uid.equals(sessionUid) && (option==null || option.equals(""))  ) // sessionUid로그인 한사람 따라서 본인이 아니면
 			boardService.increaseViewCount(bid);
 		
@@ -90,12 +90,12 @@ public class BoardController {
 		model.addAttribute("board", board);
 		List<Reply> replyList = replyService.getReplyList(bid);
 		model.addAttribute("replyList", replyList);
-		return "board/detail";
+		return "board/detailEditor";
 	}
 	
 	@GetMapping("/write")
 	public String writeForm() {
-		return "board/write";
+		return "board/writeEditor";
 	}
 	
 	@PostMapping("/write")
@@ -122,7 +122,7 @@ public class BoardController {
 		JsonUtil ju = new JsonUtil();
 		String files = ju.listToJson(fileList);
 		
-		String sessionUid = (String) session.getAttribute("uid");
+		String sessionUid = (String) session.getAttribute("sessUid");
 		Board board = new Board(sessionUid, title, content, files);
 		boardService.insertBoard(board);
 		return "redirect:/board/list?p=1&f=&q=";
@@ -141,23 +141,27 @@ public class BoardController {
 		return "redirect:/board/list?p=" + session.getAttribute("currentBoardPage") + "&f=&q=";
 	}
 	
-	@GetMapping("/update/{bid}")
-	public String update(@PathVariable int bid, HttpSession session, Model model) {
+	@GetMapping("/update/{bid}") // detail.jsp에서 href="/sbbs/board/update/${board.bid}
+	public String updateForm(@PathVariable int bid, HttpSession session, Model model) {
 		Board board = boardService.getBoard(bid);
+		board.setTitle(board.getTitle().replace("\"", "&quot;"));
 		model.addAttribute("board", board);
-		JsonUtil ju = new JsonUtil();
-		List<String> fileList = ju.jsonToList(board.getFiles());
-		model.addAttribute("fileList", fileList);
-		fileList = ju.jsonToList(board.getFiles());
-		session.setAttribute("fileList", fileList);
-		return "board/update";
+		
+		String uploadedFiles = board.getFiles().trim();
+		if (uploadedFiles != null && uploadedFiles.contains("list")) {
+			JsonUtil ju = new JsonUtil();
+			List<String> fileList = ju.jsonToList(board.getFiles());
+			session.setAttribute("fileList", fileList);
+		}
+		return "board/updateEditor";
 	}
 	
-	@PostMapping("/update")
-	public String updateProc(MultipartHttpServletRequest req, HttpSession session, Model model) {
+	@PostMapping("/update")	
+	public String updateProc(MultipartHttpServletRequest req, HttpSession session) {
 		int bid = Integer.parseInt(req.getParameter("bid"));
 		String title = req.getParameter("title");
 		String content = req.getParameter("content");
+		String sessionUid = (String) session.getAttribute("sessUid");
 		
 		List<String> fileList = (List<String>) session.getAttribute("fileList");
 		if (fileList != null && fileList.size() > 0) { 
@@ -165,7 +169,8 @@ public class BoardController {
 			if (delFiles != null && delFiles.length > 0) {
 				for (String delFile: delFiles) {
 					fileList.remove(delFile);	// fileList에서 삭제
-					File df = new File(boardService.UPLOAD_PATH + delFile);	// 실제 파일 삭제
+//		확인해보기  File df = new File(boardService.UPLOAD_PATH + delFile);	// 실제 파일 삭제
+					File df = new File(uploadDir + "upload/" + delFile);
 					df.delete();
 				}
 			}
@@ -173,32 +178,26 @@ public class BoardController {
 			fileList = new ArrayList<String>();
 		}
 		
-		List<Part> fileParts;
-		try {
-			fileParts = (List<Part>) req.getParts();
-			for (Part part: fileParts) {
-				String filename = part.getSubmittedFileName();
-				if (filename == null || filename.equals(""))
-					continue;
-				part.write(boardService.UPLOAD_PATH + filename);
-				fileList.add(filename);
+		List<MultipartFile> uploadfileList = req.getFiles("files");
+		for (MultipartFile part: uploadfileList) {
+			if (part.getContentType().contains("octet-stream"))	// 첨부 파일이 없는 경우 application/octet-stream
+				continue;
+			String filename = part.getOriginalFilename();
+			String uploadPath = uploadDir + "upload/" + filename;
+			try {
+				part.transferTo(new File(uploadPath));
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ServletException e) {
-			e.printStackTrace();
+			fileList.add(filename);
 		}
 		// filelist를 json으로 바꿔줘야함.
-		JsonUtil ju = new JsonUtil();
-		String files = ju.listToJson(fileList);
-		
-		
+		String files = new JsonUtil().listToJson(fileList);
+		// board를 만든후 update
 		Board board = new Board(bid, title, content, files);
 		boardService.updateBoard(board);
-		String sessionUid = (String) session.getAttribute("uid");
-//		return "redirect:/board/list?p=1&f=&q=";
-		return "redirect:/board/detail/" + bid + "/" + sessionUid;
-//		return "redirect:/board/detail";
+		
+		return "redirect:/board/detail/" + bid + "/" + sessionUid + "?option=DNI";
 	}
 	
 }

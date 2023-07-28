@@ -1,9 +1,12 @@
 package com.ys.sbbs.controller;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -17,11 +20,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Controller
 @RequestMapping("/file")
-public class Filecontroller {
+public class FileController {
 	@Value("${spring.servlet.multipart.location}") private String uploadDir;
 	
 	@GetMapping("/profile/{filename}")
@@ -63,5 +70,34 @@ public class Filecontroller {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	@ResponseBody	// ajaxResponse
+	@PostMapping("/imageUpload")
+	public String imageUpload(MultipartHttpServletRequest req) {
+		String callback = req.getParameter("CKEditorFuncNum");
+		String error = "";
+		String url = null;
+		Map<String, MultipartFile> map = req.getFileMap();
+		for (Map.Entry<String, MultipartFile> pair: map.entrySet()) {	// key, value
+			MultipartFile file = pair.getValue();
+			String filename = file.getOriginalFilename(); 	// 읽을 파일이름
+			String now = LocalDateTime.now().toString().substring(0,22).replaceAll("[-T:.]", ""); //숫자만 남기기
+			int idx = filename.lastIndexOf("."); // 파일명사이에 .이 있을수 있어 lastIndexOf
+			filename = now  + filename.substring(idx);	// 고유한 파일 이름으로 변경
+			String uploadPath = uploadDir + "upload/" + filename;
+			try {
+				file.transferTo(new File(uploadPath));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			url = "/sbbs/file/download/" + filename;
+		}
+		String ajaxResponse = "<script>"
+				+ " window.parent.CKEDITOR.tools.callFunction("
+				+       callback + ", '" + url + "', '" + error + "'"
+				+ "      	);"
+				+ " </script>";
+		return ajaxResponse;
 	}
 }

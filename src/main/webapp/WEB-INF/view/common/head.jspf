@@ -13,4 +13,5 @@
         * { font-family: 'Noto Sans KR', sans-serif; }
         a { text-decoration: none; }
     </style>
-    <script src="/sbbs/js/aside.js"></script>
+    <script src="/sbbs/js/aside.js?v=1"></script>
+    <!-- ?v=1 쓴이유 aside.js를 변경할 경우 v=1의 숫자값을 변경해야함 아마도 캐쉬가 생기는것같은 먹히지않아서 -->
