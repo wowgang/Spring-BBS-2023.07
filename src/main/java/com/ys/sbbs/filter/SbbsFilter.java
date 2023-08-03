@@ -30,11 +30,14 @@ public class SbbsFilter extends HttpFilter implements Filter {
 			session.setAttribute("menu", "board");	// 메뉴값을 board로 바꾸겠다
 		else if (uri.contains("user"))
 			session.setAttribute("menu", "user");
+		else if (uri.contains("schedule"))
+			session.setAttribute("menu", "schedule");
 		else
 			session.setAttribute("menu", "");
 		
 		String sessionUid = (String) session.getAttribute("sessUid");
-		String[] urlPatterns = { "/board", "/aside", "/file", "user/liset", "/user/update", "/user/delete" };	// 로그인이 되어야 필요한것
+		String[] urlPatterns = { "/board", "/aside", "/file", "/schedule",
+								"user/liset", "/user/update", "/user/delete" };	// 로그인이 되어야 필요한것
 		
 		for (String routing: urlPatterns) {
 			if (uri.contains(routing)) {

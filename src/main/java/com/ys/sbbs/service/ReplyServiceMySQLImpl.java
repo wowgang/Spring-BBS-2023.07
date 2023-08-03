@@ -9,8 +9,8 @@ import com.ys.sbbs.dao.ReplyDaoMySQL;
 import com.ys.sbbs.entity.Reply;
 
 // add unimplemented  methods
-@Service
-public class ReplyServiceMySQLImpl implements ReplyService{
+//@Service
+public class ReplyServiceMySQLImpl implements ReplyServiceMySQL{
 	@Autowired private ReplyDaoMySQL replyDao;
 	
 	@Override

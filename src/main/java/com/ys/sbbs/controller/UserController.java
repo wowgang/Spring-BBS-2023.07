@@ -8,6 +8,8 @@ import java.util.List;
 import javax.servlet.http.HttpSession;
 
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -22,10 +24,20 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import com.ys.sbbs.entity.User;
 import com.ys.sbbs.service.UserService;
 import com.ys.sbbs.utility.AsideUtil;
+/**
+ *  //=> http://localhost:8080/sbbs/user/login
+ * trace < debug < info < warn < error
+ * default : info
+ * 
+ * session uid => sessUid
+ * 
+ */
 
 @Controller
 @RequestMapping("/user")
 public class UserController {
+	private final Logger log = LoggerFactory.getLogger(this.getClass().getSimpleName());
+	
 	@Autowired private UserService userService;
 	@Value("${spring.servlet.multipart.location}") private String uploadDir;
 	// Get일때 입력 폼 보여주기
@@ -102,6 +114,10 @@ public class UserController {
 			session.setAttribute("stateMsg", stateMsg);
 			
 			// 환영 메세지
+			// log level 설정  [trace > debug > info > warn > error]
+//			log.warn("Warn Login: {}, {}", uid, user.getUname());
+			log.info("Info Login: {}, {}", uid, user.getUname());
+//			log.debug("Debug Login: {}, {}", uid, user.getUname());
 			model.addAttribute("msg", user.getUname() + "님 환영합니다.");
 			model.addAttribute("url", "/sbbs/board/list?p=1&f=&q=");
 //			model.addAttribute("url", "/sbbs/user/list/1");
